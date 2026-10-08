@@ -173,11 +173,7 @@ abstract class EHentai :
 
     private fun languageTag(enforceLanguageFilter: Boolean = false): String = if (enforceLanguageFilter || getEnforceLanguagePref()) "language:$ehLang" else ""
 
-    override fun popularMangaRequest(page: Int) = if (isLangNatural()) {
-        exGet("$baseUrl/?f_search=${languageTag()}&f_srdd=5&f_sr=on", page)
-    } else {
-        latestUpdatesRequest(page)
-    }
+    override fun popularMangaRequest(page: Int) = exGet("$baseUrl/popular")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val enforceLanguageFilter = filters.find { it is EnforceLanguageFilter }?.state == true
