@@ -1,8 +1,9 @@
 package eu.kanade.tachiyomi.extension.all.ehentai
 
 import eu.kanade.tachiyomi.source.model.SManga
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private const val EH_ARTIST_NAMESPACE = "artist"
@@ -14,7 +15,8 @@ private val ONGOING_SUFFIX = arrayOf(
     "{ongoing}",
 )
 
-val EX_DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+val EX_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.US)
+    .withZone(ZoneOffset.UTC)
 
 fun ExGalleryMetadata.copyTo(manga: SManga) {
     url?.let { manga.url = it }
@@ -60,7 +62,7 @@ fun ExGalleryMetadata.copyTo(manga: SManga) {
 
     val detailsDesc = StringBuilder()
     uploader?.let { detailsDesc += "Uploader: $it\n" }
-    datePosted?.let { detailsDesc += "Posted: ${EX_DATE_FORMAT.format(Date(it))}\n" }
+    datePosted?.let { detailsDesc += "Posted: ${EX_DATE_FORMAT.format(Instant.ofEpochMilli(it))}\n" }
     visible?.let { detailsDesc += "Visible: $it\n" }
     category?.let { detailsDesc += "Category: $it\n" }
     language?.let {
