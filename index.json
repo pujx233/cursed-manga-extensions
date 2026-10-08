@@ -1,6 +1,6 @@
 {
-  "name": "ExHentai Watched & Popular Test",
-  "badgeLabel": "ExHentai Test",
+  "name": "ExHentai",
+  "badgeLabel": "ExHentai",
   "signingKey": "3e1dc8b56d3eafdb2acd727e9be4a246df7cf6012a4c0e71457a2b18f1deab8b",
   "contact": {
     "website": "https://github.com/pujx233/cursed-manga-extensions"
@@ -11,13 +11,13 @@
         "name": "E-Hentai",
         "packageName": "eu.kanade.tachiyomi.extension.all.ehentai",
         "resources": {
-          "apkUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/apk/tachiyomi-all.ehentai-v1.4.34.apk",
+          "apkUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/apk/tachiyomi-all.ehentai-v1.4.35.apk",
           "iconUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/icon/all.ehentai.png",
-          "jarUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/jar/tachiyomi-all.ehentai-v1.4.34.jar"
+          "jarUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/jar/tachiyomi-all.ehentai-v1.4.35.jar"
         },
         "extensionLib": "1.4",
-        "versionCode": "104034",
-        "versionName": "1.4.34",
+        "versionCode": "104035",
+        "versionName": "1.4.35",
         "contentWarning": "CONTENT_WARNING_NSFW",
         "sources": [
           {

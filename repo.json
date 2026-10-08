@@ -1,8 +1,8 @@
 {
   "index_v2": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/index.pb",
   "meta": {
-    "name": "ExHentai Watched & Popular Test",
-    "shortName": "ExHentai Test",
+    "name": "ExHentai",
+    "shortName": "ExHentai",
     "website": "https://github.com/pujx233/cursed-manga-extensions",
     "signingKeyFingerprint": "3e1dc8b56d3eafdb2acd727e9be4a246df7cf6012a4c0e71457a2b18f1deab8b"
   }
