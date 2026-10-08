@@ -82,7 +82,7 @@ abstract class EHentai :
     // true if lang is a "natural human language"
     private fun isLangNatural(): Boolean = lang !in listOf("none", "other")
 
-    private fun genericMangaParse(response: Response): MangasPage {
+    private fun genericMangaParse(response: Response, updateCursor: Boolean = true): MangasPage {
         val doc = response.asJsoup()
         val mangaElements = doc.select("table.itg td.glname")
             .let { elements ->
@@ -104,7 +104,7 @@ abstract class EHentai :
                     it.selectFirst("a")?.apply {
                         title = this.select(".glink").text()
                         url = ExGalleryMetadata.normalizeUrl(attr("href"))
-                        if (i == mangaElements.lastIndex) {
+                        if (updateCursor && i == mangaElements.lastIndex) {
                             lastMangaId = ExGalleryMetadata.galleryId(attr("href"))
                         }
                     }
@@ -224,7 +224,7 @@ abstract class EHentai :
 
     override fun latestUpdatesRequest(page: Int) = exGet(baseUrl, page)
 
-    override fun popularMangaParse(response: Response) = genericMangaParse(response)
+    override fun popularMangaParse(response: Response) = genericMangaParse(response, updateCursor = false)
     override fun searchMangaParse(response: Response) = genericMangaParse(response)
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response)
 
