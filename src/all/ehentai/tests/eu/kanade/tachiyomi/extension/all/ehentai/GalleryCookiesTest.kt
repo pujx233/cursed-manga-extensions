@@ -1,62 +1,118 @@
 package eu.kanade.tachiyomi.extension.all.ehentai
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GalleryCookiesTest {
     @Test
-    fun readsIgneousFromExhentaiRatherThanTheForum() {
-        val domains = mutableListOf<String>()
-        val result = galleryCookieValue("igneous", false) { url ->
-            domains += url
-            when (url) {
-                "https://exhentai.org" -> "ipb_member_id=42; igneous=ex-session"
-                else -> null
-            }
-        }
-        assertEquals("ex-session", result)
-        assertEquals(listOf("https://exhentai.org"), domains)
+    fun readsAndParsesEachWebViewHostOnceForAllCredentials() {
+        val reads = mutableListOf<String>()
+        val credentials = galleryCredentials(false, { url ->
+            reads += url
+            "ipb_member_id=member; ipb_pass_hash=pass; igneous=session"
+        }) { error("WebView already has the credentials") }
+        assertEquals("member", credentials.memberId)
+        assertEquals("pass", credentials.passHash)
+        assertEquals("session", credentials.igneous)
+        assertEquals(listOf("https://exhentai.org"), reads)
+    }
+
+    @Test
+    fun missingWebViewCookiesAreNotReadRepeatedlyWithinOneRequest() {
+        val reads = mutableListOf<String>()
+        val credentials = galleryCredentials(false, { url ->
+            reads += url
+            null
+        }) { "stored-$it" }
+        assertEquals("stored-ipb_member_id", credentials.memberId)
+        assertEquals("stored-ipb_pass_hash", credentials.passHash)
+        assertEquals("stored-igneous", credentials.igneous)
+        assertEquals(listOf("https://exhentai.org", "https://e-hentai.org", "https://forums.e-hentai.org"), reads)
+    }
+
+    @Test
+    fun credentialSnapshotsRefreshBetweenRequests() {
+        var session = "first"
+        val cookiesForUrl: (String) -> String? = { "ipb_member_id=member; ipb_pass_hash=pass; igneous=$session" }
+        assertEquals("first", galleryCredentials(false, cookiesForUrl) { "" }.igneous)
+        session = "refreshed"
+        assertEquals("refreshed", galleryCredentials(false, cookiesForUrl) { "" }.igneous)
+    }
+
+    @Test
+    fun ehentaiDoesNotReadTheUnneededExhentaiSession() {
+        val reads = mutableListOf<String>()
+        val credentials = galleryCredentials(true, { url ->
+            reads += url
+            "ipb_member_id=eh-member; ipb_pass_hash=eh-pass"
+        }) { error("WebView already has the credentials") }
+        assertEquals("eh-member", credentials.memberId)
+        assertEquals("eh-pass", credentials.passHash)
+        assertEquals("", credentials.igneous)
+        assertEquals(listOf("https://e-hentai.org"), reads)
     }
 
     @Test
     fun choosesTheActiveSiteAccountBeforeForumCookies() {
         val cookies = mapOf(
-            "https://exhentai.org" to "ipb_member_id=ex-account",
-            "https://e-hentai.org" to "ipb_member_id=eh-account",
-            "https://forums.e-hentai.org" to "ipb_member_id=forum-account",
+            "https://exhentai.org" to "ipb_member_id=ex-account; ipb_pass_hash=ex-pass; igneous=ex-session",
+            "https://e-hentai.org" to "ipb_member_id=eh-account; ipb_pass_hash=eh-pass",
+            "https://forums.e-hentai.org" to "ipb_member_id=forum-account; ipb_pass_hash=forum-pass",
         )
-        assertEquals("ex-account", galleryCookieValue("ipb_member_id", false, cookies::get))
-        assertEquals("eh-account", galleryCookieValue("ipb_member_id", true, cookies::get))
+        assertEquals("ex-account", galleryCredentials(false, cookies::get) { "" }.memberId)
+        assertEquals("eh-account", galleryCredentials(true, cookies::get) { "" }.memberId)
     }
 
     @Test
     fun observesWebViewLoginAndCookieRefreshWithoutRestarting() {
         var cookies: String? = null
         val getCookies: (String) -> String? = { cookies }
-        assertNull(galleryCookieValue("igneous", false, getCookies))
+        assertEquals("", galleryCredentials(false, getCookies) { "" }.igneous)
         cookies = "igneous=first-session"
-        assertEquals("first-session", galleryCookieValue("igneous", false, getCookies))
+        assertEquals("first-session", galleryCredentials(false, getCookies) { "" }.igneous)
         cookies = "igneous=refreshed-session"
-        assertEquals("refreshed-session", galleryCookieValue("igneous", false, getCookies))
+        assertEquals("refreshed-session", galleryCredentials(false, getCookies) { "" }.igneous)
     }
 
     @Test
     fun acceptsCookieSeparatorsAndKeepsEqualsInValues() {
-        assertEquals(
-            "value=tail",
-            galleryCookieValue("ipb_pass_hash", false) { " unrelated=1;ipb_pass_hash=value=tail ;other=2" },
-        )
-        assertNull(galleryCookieValue("igneous", false) { "igneous=; unrelated=1" })
+        val credentials = galleryCredentials(false, { " unrelated=1;ipb_member_id=42;ipb_pass_hash=value=tail ;igneous=" }) { "" }
+        assertEquals("value=tail", credentials.passHash)
+        assertEquals("", credentials.igneous)
     }
 
     @Test
     fun memberCookiesCanComeFromAnExistingForumLogin() {
-        assertEquals(
-            "forum-account",
-            galleryCookieValue("ipb_member_id", false) { url ->
-                "ipb_member_id=forum-account".takeIf { url == "https://forums.e-hentai.org" }
-            },
+        val credentials = galleryCredentials(false, { url ->
+            "ipb_member_id=forum-account; ipb_pass_hash=forum-pass".takeIf { url == "https://forums.e-hentai.org" }
+        }) { "" }
+        assertEquals("forum-account", credentials.memberId)
+        assertEquals("forum-pass", credentials.passHash)
+    }
+
+    @Test
+    fun incompleteHostAccountDoesNotBorrowAnotherAccountsPassword() {
+        val cookies = mapOf(
+            "https://exhentai.org" to "ipb_member_id=ex-account; igneous=ex-session",
+            "https://e-hentai.org" to "ipb_member_id=eh-account; ipb_pass_hash=eh-pass",
         )
+        val credentials = galleryCredentials(false, cookies::get) { error("A complete WebView account is available") }
+        assertEquals("eh-account", credentials.memberId)
+        assertEquals("eh-pass", credentials.passHash)
+        assertEquals("ex-session", credentials.igneous)
+    }
+
+    @Test
+    fun storedAccountIsSelectedAsAPairInsteadOfFillingPartialWebViewCookies() {
+        val cookies = mapOf(
+            "https://exhentai.org" to "ipb_member_id=ex-account",
+            "https://e-hentai.org" to "ipb_pass_hash=eh-pass",
+        )
+        val credentials = galleryCredentials(false, cookies::get) { "stored-$it" }
+        assertEquals("stored-ipb_member_id", credentials.memberId)
+        assertEquals("stored-ipb_pass_hash", credentials.passHash)
+        val incomplete = galleryCredentials(false, cookies::get) { if (it == "ipb_member_id") "stored-member" else "" }
+        assertEquals("", incomplete.memberId)
+        assertEquals("", incomplete.passHash)
     }
 }

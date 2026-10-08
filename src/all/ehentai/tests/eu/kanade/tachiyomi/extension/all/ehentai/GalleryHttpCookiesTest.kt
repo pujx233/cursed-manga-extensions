@@ -9,7 +9,9 @@ import okhttp3.Request
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.Proxy
 
 class GalleryHttpCookiesTest {
     @Test
@@ -24,7 +26,10 @@ class GalleryHttpCookiesTest {
         server.start()
         try {
             var session = "first-session"
+            var galleryCredentialReads = 0
             val client = OkHttpClient.Builder()
+                .proxy(Proxy.NO_PROXY)
+                .dns { listOf(InetAddress.getByName("127.0.0.1")) }
                 .cookieJar(object : CookieJar {
                     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) = Unit
                     override fun loadForRequest(url: HttpUrl) = listOf(
@@ -33,14 +38,14 @@ class GalleryHttpCookiesTest {
                         Cookie.Builder().name("igneous").value("jar-session").domain(url.host).build(),
                     )
                 })
-                .addGalleryCookies(
-                    domain = { "127.0.0.1" },
-                    memberId = { "test-member" },
-                    passHash = { "test-pass" },
-                    igneous = { galleryCookieValue("igneous", false) { "igneous=$session" }.orEmpty() },
-                )
+                .addGalleryCookies { forceEh ->
+                    galleryCredentialReads++
+                    val site = if (forceEh) "eh" else "ex"
+                    GalleryCredentials("$site-member", "$site-pass", session)
+                }
                 .build()
-            val request = Request.Builder().url("http://127.0.0.1:${server.address.port}/watched").build()
+            assertEquals(0, galleryCredentialReads)
+            val request = Request.Builder().url("http://exhentai.org:${server.address.port}/watched").build()
             client.newCall(request).execute().use { assertEquals(200, it.code) }
             session = "refreshed-session"
             client.newCall(request).execute().use { assertEquals(200, it.code) }
@@ -48,18 +53,32 @@ class GalleryHttpCookiesTest {
             assertTrue("igneous=first-session" in receivedCookies[0])
             assertTrue("igneous=refreshed-session" in receivedCookies[1])
             assertTrue(receivedCookies.all { "uconfig=prn_n" in it && "nw=1" in it })
-            assertTrue(receivedCookies.all { "ipb_member_id=test-member" in it && "ipb_pass_hash=test-pass" in it })
+            assertTrue(receivedCookies.all { "ipb_member_id=ex-member" in it && "ipb_pass_hash=ex-pass" in it })
             assertTrue(receivedCookies.all { cookie -> cookie.split("; ").count { it.startsWith("igneous=") } == 1 })
 
             session = ""
             client.newCall(request).execute().use { assertEquals(200, it.code) }
             assertTrue("igneous=jar-session" in receivedCookies[2])
 
+            client.newCall(request.newBuilder().url("http://e-hentai.org:${server.address.port}/watched").build())
+                .execute().use { assertEquals(200, it.code) }
+            assertTrue("ipb_member_id=eh-member" in receivedCookies[3])
+            assertEquals(4, galleryCredentialReads)
+
+            var credentialReads = 0
             val unrelatedClient = OkHttpClient.Builder()
-                .addGalleryCookies({ "exhentai.org" }, { "test-member" }, { "test-pass" }, { "ex-session" })
+                .proxy(Proxy.NO_PROXY)
+                .dns { listOf(InetAddress.getByName("127.0.0.1")) }
+                .addGalleryCookies {
+                    credentialReads++
+                    GalleryCredentials("test-member", "test-pass", "ex-session")
+                }
                 .build()
-            unrelatedClient.newCall(request).execute().use { assertEquals(200, it.code) }
-            assertEquals("", receivedCookies[3])
+            val initializationReads = credentialReads
+            val imageRequest = request.newBuilder().url("http://images.test:${server.address.port}/image").build()
+            unrelatedClient.newCall(imageRequest).execute().use { assertEquals(200, it.code) }
+            assertEquals("", receivedCookies[4])
+            assertEquals(initializationReads, credentialReads)
         } finally {
             server.stop(0)
         }
