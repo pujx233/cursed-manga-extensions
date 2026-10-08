@@ -1,12 +1,12 @@
 {
   "eu.kanade.tachiyomi.extension.all.ehentai": {
     "apk": {
-      "name": "tachiyomi-all.ehentai-v1.4.31.apk",
-      "sha256": "eb1bf78194e1df010a680c14ac91efb4c5fbecb79b4504f29e81c8d1059f8669"
+      "name": "tachiyomi-all.ehentai-v1.4.32.apk",
+      "sha256": "dfa2377e385e282b69f007152e30af114b27cdde38cf2c93b1d66b6596e88bdb"
     },
     "jar": {
-      "name": "tachiyomi-all.ehentai-v1.4.31.jar",
-      "sha256": "90f154e01a617cee84f90a0b0bf7b34985a45f733491459c9c45efd3110e9899"
+      "name": "tachiyomi-all.ehentai-v1.4.32.jar",
+      "sha256": "0d29b46aa7b13a575027558ac4096246f522bc21a580d46615dd97e540cd1d98"
     }
   }
 }
