@@ -1,0 +1,129 @@
+{
+  "name": "ExHentai Watched & Popular Test",
+  "badgeLabel": "ExHentai Test",
+  "signingKey": "3e1dc8b56d3eafdb2acd727e9be4a246df7cf6012a4c0e71457a2b18f1deab8b",
+  "contact": {
+    "website": "https://github.com/pujx233/cursed-manga-extensions"
+  },
+  "extensionList": {
+    "extensions": [
+      {
+        "name": "E-Hentai",
+        "packageName": "eu.kanade.tachiyomi.extension.all.ehentai",
+        "resources": {
+          "apkUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/apk/tachiyomi-all.ehentai-v1.4.31.apk",
+          "iconUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/icon/all.ehentai.png",
+          "jarUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/exhentai-test-repo/jar/tachiyomi-all.ehentai-v1.4.31.jar"
+        },
+        "extensionLib": "1.4",
+        "versionCode": "104031",
+        "versionName": "1.4.31",
+        "contentWarning": "CONTENT_WARNING_NSFW",
+        "sources": [
+          {
+            "id": "8100626124886895451",
+            "name": "E-Hentai",
+            "language": "ja",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "57122881048805941",
+            "name": "E-Hentai",
+            "language": "en",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "4678440076103929247",
+            "name": "E-Hentai",
+            "language": "zh",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "1876021963378735852",
+            "name": "E-Hentai",
+            "language": "nl",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "3955189842350477641",
+            "name": "E-Hentai",
+            "language": "fr",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "4348288691341764259",
+            "name": "E-Hentai",
+            "language": "de",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "773611868725221145",
+            "name": "E-Hentai",
+            "language": "hu",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "5759417018342755550",
+            "name": "E-Hentai",
+            "language": "it",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "825187715438990384",
+            "name": "E-Hentai",
+            "language": "ko",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "6116711405602166104",
+            "name": "E-Hentai",
+            "language": "pl",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "7151438547982231541",
+            "name": "E-Hentai",
+            "language": "pt-BR",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "2171445159732592630",
+            "name": "E-Hentai",
+            "language": "ru",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "3032959619549451093",
+            "name": "E-Hentai",
+            "language": "es",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "5980349886941016589",
+            "name": "E-Hentai",
+            "language": "th",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "6073266008352078708",
+            "name": "E-Hentai",
+            "language": "vi",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "5499077866612745456",
+            "name": "E-Hentai",
+            "language": "none",
+            "homeUrl": "https://e-hentai.org"
+          },
+          {
+            "id": "6140480779421365791",
+            "name": "E-Hentai",
+            "language": "other",
+            "homeUrl": "https://e-hentai.org"
+          }
+        ]
+      }
+    ]
+  }
+}
