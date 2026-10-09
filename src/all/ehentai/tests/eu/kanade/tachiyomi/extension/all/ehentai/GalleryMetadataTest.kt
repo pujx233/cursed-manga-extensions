@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.extension.all.ehentai
 
+import eu.kanade.tachiyomi.source.model.FilterList
 import okhttp3.Request
+import org.jsoup.Jsoup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -8,6 +10,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GalleryMetadataTest {
+    @Test
+    fun listingIdSearchUrlSearchAndDetailsUseTheSameGalleryUrl() {
+        GalleryTestServer(imageCount = 1).use { server ->
+            val source = TestSource(server.baseUrl)
+            val expected = "/g/1/token/?nw=always"
+            val listing = GalleryList(
+                Jsoup.parse("<table class='itg'><tr><td><a href='/g/1/token/'><div class='glink'>Gallery</div></a></td></tr></table>", server.baseUrl),
+            ).galleries.single()
+            assertEquals(expected, listing.url)
+            assertEquals("1", ExGalleryMetadata.galleryId(listing.url))
+            assertEquals(expected, source.fetchMangaDetails(listing).toBlocking().single().url)
+            assertEquals(expected, source.fetchSearchManga(1, "id:1/token", FilterList()).toBlocking().single().mangas.single().url)
+            assertEquals(expected, source.fetchSearchManga(1, "https://exhentai.org/g/1/token/", FilterList()).toBlocking().single().mangas.single().url)
+            assertEquals(expected, source.fetchChapterList(listing).toBlocking().single().single().url)
+        }
+    }
+
     @Test
     fun artistTagsPopulateTheAuthorShownByTheReaderAndOverrideTitleCredits() {
         val response = htmlResponse(

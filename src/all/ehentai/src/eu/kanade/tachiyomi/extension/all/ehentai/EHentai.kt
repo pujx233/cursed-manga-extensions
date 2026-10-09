@@ -31,6 +31,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import rx.Observable
+import rx.schedulers.Schedulers
 import java.time.ZoneOffset
 
 @Source
@@ -70,6 +71,7 @@ abstract class EHentai :
 
     private val latestPagination = GalleryPagination()
     private val searchPagination = GalleryPagination()
+    private val galleryPages = GalleryPageLoader()
 
     private fun genericMangaParse(response: Response, pagination: GalleryPagination? = null): MangasPage {
         val doc = response.asJsoup()
@@ -80,41 +82,56 @@ abstract class EHentai :
 
     override fun chapterListRequest(manga: SManga) = exGet("$baseUrl${manga.url}")
 
-    override fun chapterListParse(response: Response): List<SChapter> = listOf(
+    override fun fetchMangaDetails(manga: SManga): Observable<SManga> = galleryPage(mangaDetailsRequest(manga), GalleryPageUse.DETAILS)
+        .map { mangaDetailsParse(it).apply { initialized = true } }
+
+    override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = galleryPage(chapterListRequest(manga), GalleryPageUse.CHAPTERS)
+        .map(::chapterListParse)
+
+    override fun chapterListParse(response: Response): List<SChapter> = chapterListParse(response.asJsoup())
+
+    private fun chapterListParse(document: Document): List<SChapter> = listOf(
         SChapter.create().apply {
-            url = ExGalleryMetadata.normalizeUrl(response.request.url.encodedPath)
+            url = ExGalleryMetadata.normalizeUrl(document.location().toHttpUrl().encodedPath)
             name = "Chapter"
             chapter_number = 1f
-            date_upload = response.asJsoup().galleryPostedDate()
+            date_upload = document.galleryPostedDate()
         },
     )
 
-    override fun fetchPageList(chapter: SChapter) = fetchChapterPage(chapter, "$baseUrl${chapter.url}").map {
-        it.mapIndexed { i, s ->
-            Page(i, s)
-        }
-    }!!
+    override fun fetchPageList(chapter: SChapter): Observable<List<Page>> = galleryPage(exGet("$baseUrl${chapter.url}"), GalleryPageUse.READER)
+        .map { it.galleryReaderPages() }
 
-    /**
-     * Recursively fetch chapter pages
-     */
-    private fun fetchChapterPage(
-        chapter: SChapter,
-        np: String,
-        pastUrls: List<String> = emptyList(),
-    ): Observable<List<String>> {
-        val urls = ArrayList(pastUrls)
-        return chapterPageCall(np).flatMap {
-            val jsoup = it.asJsoup()
-            urls += jsoup.galleryImagePages()
-            jsoup.nextGalleryPageUrl()?.let { string ->
-                fetchChapterPage(chapter, string, urls)
-            } ?: Observable.just(urls)
+    override fun fetchImageUrl(page: Page): Observable<String> {
+        val url = page.url.toHttpUrl()
+        val imagePage = if (url.pathSegments.firstOrNull() == "g") {
+            galleryPage(exGet(page.url), GalleryPageUse.IMAGE_PAGES)
+                .map { it.galleryImagePage(page.index) }
+        } else {
+            Observable.just(page.url)
+        }
+        return imagePage.flatMap { chapterPageCall(exGet(it)).map(::imageUrlParse) }
+    }
+
+    private fun galleryPage(request: Request, use: GalleryPageUse): Observable<Document> {
+        val key = request.url.newBuilder().removeAllQueryParameters("nw").build().toString()
+        return galleryPages.load(key, use) {
+            chapterPageCall(request).map { response ->
+                val document = response.asJsoup()
+                if (use == GalleryPageUse.IMAGE_PAGES) {
+                    val previews = document.getElementById("gdt")
+                    check(previews?.selectFirst("a[href]") != null) { "No image pages found" }
+                    // Retain only the previews needed for reading, not the gallery's tags and comments.
+                    Document(document.location()).apply { body().appendChild(previews) }
+                } else {
+                    document
+                }
+            }
         }
     }
 
-    private fun chapterPageCall(np: String) = client.newCall(chapterPageRequest(np)).asObservableSuccess()
-    private fun chapterPageRequest(np: String) = exGet(np)
+    private fun chapterPageCall(request: Request) = client.newCall(request).asObservableSuccess()
+        .subscribeOn(Schedulers.io())
 
     // The website's Popular list has no next-page link.
     override fun popularMangaRequest(page: Int) = exGet("$baseUrl/popular")
@@ -189,11 +206,11 @@ abstract class EHentai :
         }
     }
 
-    private fun searchMangaByIdRequest(id: String) = GET("$baseUrl/g/$id", headers)
+    private fun searchMangaByIdRequest(id: String) = exGet("$baseUrl/g/${id.trimEnd('/')}/")
 
-    private fun searchMangaByIdParse(response: Response, id: String): MangasPage {
-        val details = mangaDetailsParse(response)
-        details.url = ExGalleryMetadata.normalizeUrl("/g/$id/")
+    private fun searchMangaByIdParse(document: Document): MangasPage {
+        val details = mangaDetailsParse(document)
+        details.initialized = true
         return MangasPage(listOf(details), false)
     }
 
@@ -207,9 +224,8 @@ abstract class EHentai :
         fetchSearchManga(page, "${PREFIX_ID_SEARCH}$id/$key", filters)
     } else if (query.startsWith(PREFIX_ID_SEARCH)) {
         val id = query.removePrefix(PREFIX_ID_SEARCH)
-        client.newCall(searchMangaByIdRequest(id))
-            .asObservableSuccess()
-            .map { response -> searchMangaByIdParse(response, id) }
+        galleryPage(searchMangaByIdRequest(id), GalleryPageUse.DETAILS)
+            .map(::searchMangaByIdParse)
     } else {
         super.fetchSearchManga(page, query, filters)
     }
@@ -224,25 +240,7 @@ abstract class EHentai :
     override val client by lazy {
         network.client.newBuilder()
             .addGalleryCookies(::getGalleryCredentials)
-            .addInterceptor { chain ->
-                val request = chain.request()
-                val result = runCatching { chain.proceed(request) }
-                val bakUrl = request.url.fragment
-                    ?: return@addInterceptor result.getOrThrow()
-
-                if (result.isFailure || result.getOrNull()?.isSuccessful != true) {
-                    result.getOrNull()?.close()
-                    val newRequest = GET(bakUrl, headers)
-                    val newImageUrl = imageUrlParse(chain.proceed(newRequest), false)
-                    val newImageRequest = request.newBuilder()
-                        .url(newImageUrl)
-                        .build()
-
-                    chain.proceed(newImageRequest)
-                } else {
-                    result.getOrThrow()
-                }
-            }
+            .addGalleryImageRetry({ headers }) { imageUrlParse(it, false) }
             .build()
     }
 
