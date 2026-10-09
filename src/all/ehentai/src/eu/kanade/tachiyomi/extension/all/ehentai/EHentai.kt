@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.webkit.CookieManager
 import androidx.preference.CheckBoxPreference
 import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
 import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.asObservableSuccess
@@ -22,6 +23,7 @@ import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
 import keiyoushi.annotation.Source
+import keiyoushi.utils.getPreferences
 import keiyoushi.utils.getPreferencesLazy
 import keiyoushi.utils.tryParseDateTime
 import okhttp3.HttpUrl
@@ -36,7 +38,17 @@ abstract class EHentai :
     HttpSource(),
     ConfigurableSource {
 
-    private val preferences: SharedPreferences by getPreferencesLazy()
+    private val legacySettings by lazy {
+        legacyGallerySources.map { (language, sourceId) ->
+            legacyGallerySettings(language, getPreferences(sourceId).all)
+        }.filter { it.values.isNotEmpty() }
+    }
+
+    private val preferences: SharedPreferences by getPreferencesLazy {
+        if (!getBoolean(LEGACY_SETTINGS_IMPORTED, false)) {
+            gallerySettingsToMigrate(all, legacySettings)?.let(::importGallerySettings)
+        }
+    }
 
     private val webViewCookieManager: CookieManager by lazy { CookieManager.getInstance() }
     private val forceEh: Boolean get() = getForceEhPref()
@@ -370,6 +382,9 @@ abstract class EHentai :
     // Preferences
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        // Run migration before the host writes defaults for these preferences.
+        val needsImport = !preferences.getBoolean(LEGACY_SETTINGS_IMPORTED, false)
+
         val forceEhPref = CheckBoxPreference(screen.context).apply {
             key = FORCE_EH
             title = "Force e-hentai"
@@ -400,6 +415,27 @@ abstract class EHentai :
             key = IGNEOUS
             title = "igneous"
             setDefaultValue("")
+        }
+
+        if (needsImport) {
+            screen.addPreference(
+                ListPreference(screen.context).apply {
+                    key = "LEGACY_SETTINGS_SOURCE"
+                    title = "Import previous source settings"
+                    entries = legacySettings.map { it.language }.toTypedArray()
+                    entryValues = entries
+                    setDefaultValue("")
+                    setOnPreferenceChangeListener { _, value ->
+                        preferences.importGallerySettings(legacySettings.single { it.language == value }.values)
+                        forceEhPref.isChecked = getForceEhPref()
+                        originalImagePref.isChecked = getOriginalImagePref()
+                        memberIdPref.text = preferences.getString(MEMBER_ID, "")
+                        passHashPref.text = preferences.getString(PASS_HASH, "")
+                        igneousPref.text = preferences.getString(IGNEOUS, "")
+                        true
+                    }
+                },
+            )
         }
 
         screen.addPreference(forceEhPref)
