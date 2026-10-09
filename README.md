@@ -2,7 +2,7 @@
 
 E-Hentai / ExHentai extension for Tachimanga.
 
-[Add extension repository](https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/repo/index.min.json) · Version **1.4.39**
+[Add extension repository](https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/repo/index.min.json) · Version **1.4.40**
 
 Browse Watched, Popular and Favorites in one source, with language and category filters. Website account settings and blocked tags are preserved; Favorites follows the website and does not apply tag blocking. Creator tags and title credits populate the author field. Chapter dates use the gallery's Posted time.
 
@@ -10,6 +10,6 @@ The reader starts after the first gallery directory and resolves later directori
 
 All former language sources use the app's migration feature to move to the unified source.
 
-[Source code](https://github.com/pujx233/cursed-manga-extensions/tree/feat/exhentai-watched-popular) · [Source commit](https://github.com/pujx233/cursed-manga-extensions/tree/1b4c5ec9f31dbc5c5d4ad764331da96581f315a2) · [Upstream PR](https://github.com/yuzono/cursed-manga-extensions/pull/107)
+[Source code](https://github.com/pujx233/cursed-manga-extensions/tree/feat/ehentai-features-performance) · [Source commit](https://github.com/pujx233/cursed-manga-extensions/tree/003e7ae2984aa3cd83789b25f27a4b9c1bdbf5af) · [Upstream PR](https://github.com/yuzono/cursed-manga-extensions/pull/108)
 
 Based on [cursed-manga-extensions](https://github.com/yuzono/cursed-manga-extensions). Licensed under Apache License 2.0.

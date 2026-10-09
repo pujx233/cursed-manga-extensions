@@ -11,13 +11,13 @@
         "name": "E-Hentai",
         "packageName": "eu.kanade.tachiyomi.extension.all.ehentai",
         "resources": {
-          "apkUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.39/tachiyomi-all.ehentai-v1.4.39.apk",
+          "apkUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.40/tachiyomi-all.ehentai-v1.4.40.apk",
           "iconUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/repo/icon/all.ehentai.png",
-          "jarUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.39/tachiyomi-all.ehentai-v1.4.39.jar"
+          "jarUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.40/tachiyomi-all.ehentai-v1.4.40.jar"
         },
         "extensionLib": "1.4",
-        "versionCode": "104039",
-        "versionName": "1.4.39",
+        "versionCode": "104040",
+        "versionName": "1.4.40",
         "contentWarning": "CONTENT_WARNING_NSFW",
         "sources": [
           {
