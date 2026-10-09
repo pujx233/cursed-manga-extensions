@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.all.ehentai
 
-import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.webkit.CookieManager
 import androidx.preference.CheckBoxPreference
@@ -21,8 +20,8 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.util.asJsoup
 import keiyoushi.annotation.Source
+import keiyoushi.utils.asJsoup
 import keiyoushi.utils.getPreferences
 import keiyoushi.utils.getPreferencesLazy
 import keiyoushi.utils.tryParseDateTime
@@ -30,6 +29,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.Response
+import org.jsoup.nodes.Document
 import rx.Observable
 import java.time.ZoneOffset
 
@@ -74,8 +74,8 @@ abstract class EHentai :
     private fun genericMangaParse(response: Response, pagination: GalleryPagination? = null): MangasPage {
         val doc = response.asJsoup()
         val listing = GalleryList(doc)
-        pagination?.update(response.request, listing.nextPageUrl)
-        return MangasPage(listing.galleries.map { it.toSManga() }, pagination != null && listing.nextPageUrl != null)
+        val hasNextPage = pagination?.update(response.request, listing.nextPageUrl) == true
+        return MangasPage(listing.galleries, hasNextPage)
     }
 
     override fun chapterListRequest(manga: SManga) = exGet("$baseUrl${manga.url}")
@@ -116,6 +116,7 @@ abstract class EHentai :
     private fun chapterPageCall(np: String) = client.newCall(chapterPageRequest(np)).asObservableSuccess()
     private fun chapterPageRequest(np: String) = exGet(np)
 
+    // The website's Popular list has no next-page link.
     override fun popularMangaRequest(page: Int) = exGet("$baseUrl/popular")
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
@@ -132,84 +133,48 @@ abstract class EHentai :
 
     private fun exGet(url: String): Request = GET(url, headers)
 
-    /**
-     * Parse gallery page to metadata model
-     */
-    @SuppressLint("DefaultLocale")
-    override fun mangaDetailsParse(response: Response) = with(response.asJsoup()) {
-        with(ExGalleryMetadata()) {
-            url = ExGalleryMetadata.normalizeUrl(response.request.url.encodedPath)
-            title = select("#gn").text().nullIfBlank()?.trim()
+    override fun mangaDetailsParse(response: Response) = mangaDetailsParse(response.asJsoup())
 
-            altTitle = select("#gj").text().nullIfBlank()?.trim()
+    private fun mangaDetailsParse(document: Document) = with(document) {
+        with(ExGalleryMetadata()) {
+            url = ExGalleryMetadata.normalizeUrl(document.location().toHttpUrl().encodedPath)
+            title = getElementById("gn")?.text().nullIfBlank()
+
+            altTitle = getElementById("gj")?.text().nullIfBlank()
 
             // Thumbnail is set as background of element in style attribute
-            thumbnailUrl = select("#gd1 div").attr("style").nullIfBlank()?.let {
+            thumbnailUrl = selectFirst("#gd1 div")?.attr("style").nullIfBlank()?.let {
                 it.substring(it.indexOf('(') + 1 until it.lastIndexOf(')'))
             }
-            category = select("#gdc div").text().nullIfBlank()?.trim()?.lowercase()
+            category = selectFirst("#gdc div")?.text().nullIfBlank()?.lowercase()
 
-            uploader = select("#gdn").text().nullIfBlank()?.trim()
+            uploader = getElementById("gdn")?.text().nullIfBlank()
 
-            // Parse the table
-            select("#gdd tr").forEach {
-                it.select(".gdt1")
-                    .text()
-                    .nullIfBlank()
-                    ?.trim()
-                    ?.let { left ->
-                        it.select(".gdt2")
-                            .text()
-                            .nullIfBlank()
-                            ?.trim()
-                            ?.let { right ->
-                                ignore {
-                                    when (
-                                        left.removeSuffix(":")
-                                            .lowercase()
-                                    ) {
-                                        "posted" -> datePosted = EX_DATE_FORMAT.tryParseDateTime(right, ZoneOffset.UTC)
-
-                                        "visible" -> visible = right.nullIfBlank()
-
-                                        "language" -> {
-                                            language = right.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
-                                            translated = right.endsWith(TR_SUFFIX, true)
-                                        }
-
-                                        "file size" -> size = parseHumanReadableByteCount(right)?.toLong()
-
-                                        "length" -> length = right.removeSuffix("pages").trim().nullIfBlank()?.toInt()
-
-                                        "favorited" -> favorites = right.removeSuffix("times").trim().nullIfBlank()?.toInt()
-                                    }
-                                }
-                            }
+            select("#gdd tr").forEach { row ->
+                val label = row.selectFirst(".gdt1")?.text()?.removeSuffix(":")?.lowercase()
+                val value = row.selectFirst(".gdt2")?.text().nullIfBlank() ?: return@forEach
+                when (label) {
+                    "posted" -> datePosted = EX_DATE_FORMAT.tryParseDateTime(value, ZoneOffset.UTC)
+                    "visible" -> visible = value
+                    "language" -> {
+                        language = value.removeSuffix(TR_SUFFIX).trim().nullIfBlank()
+                        translated = value.endsWith(TR_SUFFIX, true)
                     }
+                    "file size" -> size = parseHumanReadableByteCount(value)?.toLong()
+                    "length" -> length = value.substringBefore(' ').replace(",", "").toIntOrNull()
+                    "favorited" -> favorites = value.substringBefore(' ').replace(",", "").toIntOrNull()
+                }
             }
 
-            // Parse ratings
-            ignore {
-                averageRating = select("#rating_label")
-                    .text()
-                    .removePrefix("Average:")
-                    .trim()
-                    .nullIfBlank()
-                    ?.toDouble()
-                ratingCount = select("#rating_count")
-                    .text()
-                    .trim()
-                    .nullIfBlank()
-                    ?.toInt()
-            }
+            averageRating = getElementById("rating_label")?.text()?.removePrefix("Average:")?.trim()?.toDoubleOrNull()
+            ratingCount = getElementById("rating_count")?.text()?.replace(",", "")?.toIntOrNull()
 
             // Parse tags
-            tags.clear()
             select("#taglist tr").forEach {
                 val namespace = it.select(".tc").text().removeSuffix(":")
                 val currentTags = it.select("div").map { element ->
                     Tag(
-                        element.text().trim(),
+                        element.text(),
                         element.hasClass("gtl"),
                     )
                 }
@@ -292,7 +257,7 @@ abstract class EHentai :
         AdvancedGroup(),
     )
 
-    internal open class TextFilter(name: String, val type: String, val specific: String = "") : Text(name)
+    internal class TextFilter(name: String, val type: String) : Text(name)
 
     class GenreOption(name: String, val mask: Int) : CheckBox(name, false)
 
@@ -361,7 +326,6 @@ abstract class EHentai :
         }
     }
 
-    // Explicit type arg for listOf() to workaround this: KT-16570
     class AdvancedGroup :
         UriGroup<Filter<*>>(
             "Advanced Options",

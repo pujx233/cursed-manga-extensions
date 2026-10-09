@@ -71,4 +71,12 @@ class GalleryMetadataTest {
         val manga = response.use(TestSource()::mangaDetailsParse)
         assertFalse(manga.description.orEmpty().contains("Language:"))
     }
+
+    @Test
+    fun fileSizesHandleWebsiteUnitsWithoutSwallowingExceptions() {
+        assertEquals(1536.0, parseHumanReadableByteCount("1.5 KiB"))
+        assertEquals(1200.0, parseHumanReadableByteCount("1.2 KB"))
+        assertEquals(512.0, parseHumanReadableByteCount("512 B"))
+        assertNull(parseHumanReadableByteCount("Unknown"))
+    }
 }
