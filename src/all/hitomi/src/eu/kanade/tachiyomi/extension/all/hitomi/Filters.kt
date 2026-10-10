@@ -76,6 +76,28 @@ internal class TypeFilter(name: String) :
     )
 internal open class CheckBoxFilter(name: String, val value: String, state: Boolean) : Filter.CheckBox(name, state)
 
+internal fun FilterList.canUseNozomiPage(query: String) = query.isBlank() && none {
+    when (it) {
+        is TextFilter -> it.state.isNotBlank()
+        is TypeFilter -> it.state.any { type -> !type.state }
+        is SelectFilter -> it.vals[it.state].first == "Random"
+        else -> false
+    }
+}
+
+internal fun FilterList.searchKey(query: String, language: String): List<String> = buildList {
+    add(query.trim().lowercase())
+    add(language)
+    this@searchKey.forEach { filter ->
+        when (filter) {
+            is SelectFilter -> add(filter.vals[filter.state].first)
+            is TypeFilter -> add(filter.state.filter { !it.state }.joinToString { it.value })
+            is TextFilter -> add("${filter.type}:${filter.state}")
+            else -> {}
+        }
+    }
+}
+
 private val getSortsList: List<Triple<String, String?, String>> = listOf(
     Triple("Date Added", null, "index"),
     Triple("Date Published", "date", "published"),
