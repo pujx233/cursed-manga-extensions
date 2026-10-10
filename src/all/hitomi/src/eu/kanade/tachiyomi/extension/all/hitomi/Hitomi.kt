@@ -1,8 +1,11 @@
 package eu.kanade.tachiyomi.extension.all.hitomi
 
 import android.util.Log
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceScreen
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.await
+import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -11,6 +14,8 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import eu.kanade.tachiyomi.source.online.HttpSource
 import keiyoushi.annotation.Source
+import keiyoushi.utils.firstInstanceOrNull
+import keiyoushi.utils.getPreferencesLazy
 import keiyoushi.utils.parseAs
 import keiyoushi.utils.tryParse
 import kotlinx.coroutines.async
@@ -41,39 +46,13 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalUnsignedTypes::class)
 @Source
-abstract class Hitomi : HttpSource() {
+abstract class Hitomi :
+    HttpSource(),
+    ConfigurableSource {
 
-    private val nozomiLang: String by lazy {
-        when (lang) {
-            "all" -> "all"
-            "en" -> "english"
-            "id" -> "indonesian"
-            "jv" -> "javanese"
-            "ca" -> "catalan"
-            "ceb" -> "cebuano"
-            "cs" -> "czech"
-            "da" -> "danish"
-            "de" -> "german"
-            "et" -> "estonian"
-            "es" -> "spanish"
-            "eo" -> "esperanto"
-            "fr" -> "french"
-            "it" -> "italian"
-            "hi" -> "hindi"
-            "hu" -> "hungarian"
-            "pl" -> "polish"
-            "pt" -> "portuguese"
-            "vi" -> "vietnamese"
-            "tr" -> "turkish"
-            "ru" -> "russian"
-            "uk" -> "ukrainian"
-            "ar" -> "arabic"
-            "ko" -> "korean"
-            "zh" -> "chinese"
-            "ja" -> "japanese"
-            else -> ""
-        }
-    }
+    private val preferences by getPreferencesLazy()
+    private val defaultLanguage: String get() = preferences.getString("default_language", "all") ?: "all"
+    private val popularPeriod: String get() = preferences.getString("popular_period", "today") ?: "today"
 
     private val cdnDomain = "gold-usergeneratedcontent.net"
 
@@ -91,7 +70,7 @@ abstract class Hitomi : HttpSource() {
 
     override fun fetchPopularManga(page: Int): Observable<MangasPage> = Observable.fromCallable {
         runBlocking {
-            val entries = getGalleryIDsFromNozomi("popular", "year", nozomiLang, page.nextPageRange())
+            val entries = getGalleryIDsFromNozomi("popular", popularPeriod, defaultLanguage, page.nextPageRange())
                 .toMangaList()
 
             MangasPage(entries, entries.size >= 24)
@@ -100,7 +79,7 @@ abstract class Hitomi : HttpSource() {
 
     override fun fetchLatestUpdates(page: Int): Observable<MangasPage> = Observable.fromCallable {
         runBlocking {
-            val entries = getGalleryIDsFromNozomi(null, "index", nozomiLang, page.nextPageRange())
+            val entries = getGalleryIDsFromNozomi(null, "index", defaultLanguage, page.nextPageRange())
                 .toMangaList()
 
             MangasPage(entries, entries.size >= 24)
@@ -115,7 +94,7 @@ abstract class Hitomi : HttpSource() {
                 searchResponse = hitomiSearch(
                     query.trim(),
                     filters,
-                    nozomiLang,
+                    filters.firstInstanceOrNull<LanguageFilter>()?.getLanguage(defaultLanguage) ?: defaultLanguage,
                 )
             }
 
@@ -126,7 +105,27 @@ abstract class Hitomi : HttpSource() {
         }
     }
 
-    override fun getFilterList() = getFilters()
+    override fun getFilterList() = getFilters(popularPeriod)
+
+    override fun setupPreferenceScreen(screen: PreferenceScreen) {
+        ListPreference(screen.context).apply {
+            key = "default_language"
+            title = "Default language"
+            entries = hitomiLanguages.map { it.first }.toTypedArray()
+            entryValues = hitomiLanguages.map { it.second }.toTypedArray()
+            setDefaultValue("all")
+            summary = "%s"
+        }.also(screen::addPreference)
+
+        ListPreference(screen.context).apply {
+            key = "popular_period"
+            title = "Default popular ranking"
+            entries = arrayOf("Today", "This week", "This month", "This year")
+            entryValues = arrayOf("today", "week", "month", "year")
+            setDefaultValue("today")
+            summary = "%s"
+        }.also(screen::addPreference)
+    }
 
     private fun Int.nextPageRange(): LongRange {
         val byteOffset = ((this - 1) * 25) * 4L
@@ -214,7 +213,7 @@ abstract class Hitomi : HttpSource() {
             }
         }
 
-        if (language != "all" && sortBy == Pair(null, "index") && !terms.any { it.contains(":") }) {
+        if (language != "all") {
             terms += "language:$language"
         }
 
@@ -257,32 +256,21 @@ abstract class Hitomi : HttpSource() {
             }
         }
 
-        val results = when {
-            positiveTerms.isEmpty() || sortBy != Pair(null, "index")
-            -> getGalleryIDsFromNozomi(sortBy.first, sortBy.second, language)
-
-            else -> emptySet()
+        val positiveIterator = positiveResults.iterator()
+        val results = if (positiveTerms.isEmpty() || sortBy != Pair(null, "index")) {
+            getGalleryIDsFromNozomi(sortBy.first, sortBy.second, language)
+        } else {
+            positiveIterator.next().await()
         }.toMutableSet()
 
-        fun filterPositive(newResults: Set<Int>) {
-            when {
-                results.isEmpty() -> results.addAll(newResults)
-                else -> results.retainAll(newResults)
-            }
-        }
-
-        fun filterNegative(newResults: Set<Int>) {
-            results.removeAll(newResults)
-        }
-
         // positive results
-        positiveResults.forEach {
-            filterPositive(it.await())
+        positiveIterator.forEach {
+            results.retainAll(it.await())
         }
 
         // negative results
         negativeResults.forEach {
-            filterNegative(it.await())
+            results.removeAll(it.await())
         }
 
         if (random) {
