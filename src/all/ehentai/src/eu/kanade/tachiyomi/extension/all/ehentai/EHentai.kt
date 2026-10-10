@@ -138,14 +138,13 @@ abstract class EHentai :
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val firstPageUrl = gallerySearchUrl(baseUrl, query, filters)
-        if (firstPageUrl.encodedPath == "/popular") return exGet(firstPageUrl.toString())
         return searchPagination.request(exGet(firstPageUrl.toString()), page)
     }
 
     override fun latestUpdatesRequest(page: Int) = latestPagination.request(exGet(baseUrl), page)
 
     override fun popularMangaParse(response: Response) = genericMangaParse(response)
-    override fun searchMangaParse(response: Response) = genericMangaParse(response, searchPagination.takeUnless { response.request.url.encodedPath == "/popular" })
+    override fun searchMangaParse(response: Response) = genericMangaParse(response, searchPagination)
     override fun latestUpdatesParse(response: Response) = genericMangaParse(response, latestPagination)
 
     private fun exGet(url: String): Request = GET(url, headers)

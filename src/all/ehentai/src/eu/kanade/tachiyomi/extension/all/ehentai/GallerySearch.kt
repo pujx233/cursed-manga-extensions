@@ -7,7 +7,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 
 internal fun gallerySearchUrl(baseUrl: String, query: String, filters: FilterList): HttpUrl {
     val galleryList = filters.firstInstanceOrNull<GalleryListFilter>()
-    if (galleryList?.path == "popular") return "$baseUrl/popular".toHttpUrl()
     var modifiedQuery = filters.firstInstanceOrNull<GalleryLanguageFilter>()?.addToQuery(query) ?: query
     filters.filterIsInstance<EHentai.TextFilter>().forEach { filter ->
         filter.state.split(',').filter(String::isNotBlank).forEach { tag ->

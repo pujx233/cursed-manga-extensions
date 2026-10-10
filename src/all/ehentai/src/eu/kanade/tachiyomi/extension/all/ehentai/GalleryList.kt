@@ -89,13 +89,12 @@ internal class GalleryPagination {
 internal class GalleryListFilter :
     Filter.Select<String>(
         "Gallery list",
-        arrayOf("All galleries", "Watched tags", "Popular", "Favorites"),
+        arrayOf("All galleries", "Watched tags", "Favorites"),
     ) {
     val path: String
         get() = when (state) {
             1 -> "watched"
-            2 -> "popular"
-            3 -> "favorites.php"
+            2 -> "favorites.php"
             else -> ""
         }
 }

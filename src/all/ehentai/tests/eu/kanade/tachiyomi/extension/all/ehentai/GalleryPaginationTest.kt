@@ -57,7 +57,7 @@ class GalleryPaginationTest {
     @Test
     fun filtersKeepIndependentCursorsWhenResponsesArriveOutOfOrder() {
         val variants = listOf(
-            filters(0, 0), filters(1, 0), filters(3, 0), filters(1, 1), filters(1, 1, true),
+            filters(0, 0), filters(1, 0), filters(2, 0), filters(1, 1), filters(1, 1, true),
         )
         val requests = variants.map { request(list = it) }
         requests.withIndex().reversed().forEach { (index, request) ->

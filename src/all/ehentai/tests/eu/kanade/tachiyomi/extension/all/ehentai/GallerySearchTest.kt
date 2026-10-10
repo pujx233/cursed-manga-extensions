@@ -10,15 +10,6 @@ class GallerySearchTest {
     private val source = TestSource()
 
     @Test
-    fun popularIsAvailableInTheFilterListWithoutASyntheticSearchOrPagination() {
-        val filters = source.getFilterList()
-        val list = filters.filterIsInstance<GalleryListFilter>().single()
-        list.state = list.values.indexOf("Popular")
-        assertEquals(2, list.state)
-        assertEquals("https://exhentai.org/popular", source.searchMangaRequest(1, "", filters).url.toString())
-    }
-
-    @Test
     fun watchedLanguageAndCategoryFiltersAreIncludedInTheActualRequest() {
         val filters = filters(language = "Chinese", category = "Manga")
         val url = source.searchMangaRequest(1, "", filters).url

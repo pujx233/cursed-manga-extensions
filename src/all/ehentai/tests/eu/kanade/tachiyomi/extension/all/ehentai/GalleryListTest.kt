@@ -97,8 +97,6 @@ class GalleryListTest {
         filter.state = 1
         assertEquals("watched", filter.path)
         filter.state = 2
-        assertEquals("popular", filter.path)
-        filter.state = 3
         assertEquals("favorites.php", filter.path)
     }
 

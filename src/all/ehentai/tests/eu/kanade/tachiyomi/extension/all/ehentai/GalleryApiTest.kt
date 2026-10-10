@@ -22,17 +22,16 @@ class GalleryApiTest {
                 { source.fetchSearchManga(1, "query", filters(0)) },
                 { source.fetchSearchManga(1, "query", filters(1)) },
                 { source.fetchSearchManga(1, "query", filters(2)) },
-                { source.fetchSearchManga(1, "query", filters(3)) },
             )
             actions.forEachIndexed { index, action ->
                 val result = action().toBlocking().single()
                 assertEquals(index + 1, server.requests.size)
                 assertEquals(40, result.mangas.size)
                 assertTrue(result.mangas.all { it.thumbnail_url?.endsWith(".jpg") == true })
-                if (index == 0 || index == 4) assertFalse(result.hasNextPage) else assertTrue(result.hasNextPage)
+                if (index == 0) assertFalse(result.hasNextPage) else assertTrue(result.hasNextPage)
             }
-            assertEquals(listOf("/popular", "/", "/", "/watched", "/popular", "/favorites.php"), server.requests.map { it.encodedPath })
-            assertEquals(null, server.requests[4].query)
+            assertEquals(listOf("/popular", "/", "/", "/watched", "/favorites.php"), server.requests.map { it.encodedPath })
+            assertEquals(null, server.requests[0].query)
         }
     }
 
@@ -40,7 +39,7 @@ class GalleryApiTest {
     fun watchedAndFavoritesPaginateAndRefreshWithoutReturningStaleResults() {
         ListingServer().use { server ->
             val source = TestSource(server.baseUrl)
-            listOf(1, 3).forEach { list ->
+            listOf(1, 2).forEach { list ->
                 val filters = filters(list)
                 source.fetchSearchManga(1, "artist:example", filters).toBlocking().single()
                 source.fetchSearchManga(2, "artist:example", filters).toBlocking().single()
