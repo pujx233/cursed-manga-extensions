@@ -1,12 +1,22 @@
 {
   "eu.kanade.tachiyomi.extension.all.ehentai": {
     "apk": {
-      "name": "tachiyomi-all.ehentai-v1.4.40.apk",
-      "sha256": "baa852dc5804750cf6ac31193eb1a18ce35fabb27876743c2a19cff214e9e1f0"
+      "name": "tachiyomi-all.ehentai-v1.4.41.apk",
+      "sha256": "7ebf0ed4e4c415b96a28cc99a4f823ec8a39d0635c5a38c951982f4104493f25"
     },
     "jar": {
-      "name": "tachiyomi-all.ehentai-v1.4.40.jar",
-      "sha256": "63092578cf21618a893c8302623f94b28bdbb841dc014cacbb25a2d52842381c"
+      "name": "tachiyomi-all.ehentai-v1.4.41.jar",
+      "sha256": "9c61f1aa6b150fe4428c60979e0a613e18dc896e41b21ca51d326b24abcd5789"
+    }
+  },
+  "eu.kanade.tachiyomi.extension.all.hitomi": {
+    "apk": {
+      "name": "tachiyomi-all.hitomi-v1.4.42.apk",
+      "sha256": "0ff8b20e75af6cace6fea6ffe20d59c10eea6049077a57daeb38e192bee128af"
+    },
+    "jar": {
+      "name": "tachiyomi-all.hitomi-v1.4.42.jar",
+      "sha256": "360320033110b3c95d87a93e8dbd749ee43ee7f71df00decfa953aa25e3aa867"
     }
   }
 }

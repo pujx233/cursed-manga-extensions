@@ -1,6 +1,6 @@
 {
-  "name": "ExHentai",
-  "badgeLabel": "ExHentai",
+  "name": "ExHentai + Hitomi",
+  "badgeLabel": "EH + Hitomi",
   "signingKey": "3e1dc8b56d3eafdb2acd727e9be4a246df7cf6012a4c0e71457a2b18f1deab8b",
   "contact": {
     "website": "https://github.com/pujx233/cursed-manga-extensions"
@@ -11,13 +11,13 @@
         "name": "E-Hentai",
         "packageName": "eu.kanade.tachiyomi.extension.all.ehentai",
         "resources": {
-          "apkUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.40/tachiyomi-all.ehentai-v1.4.40.apk",
+          "apkUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.41/tachiyomi-all.ehentai-v1.4.41.apk",
           "iconUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/repo/icon/all.ehentai.png",
-          "jarUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.40/tachiyomi-all.ehentai-v1.4.40.jar"
+          "jarUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/ehentai-v1.4.41/tachiyomi-all.ehentai-v1.4.41.jar"
         },
         "extensionLib": "1.4",
-        "versionCode": "104040",
-        "versionName": "1.4.40",
+        "versionCode": "104041",
+        "versionName": "1.4.41",
         "contentWarning": "CONTENT_WARNING_NSFW",
         "sources": [
           {
@@ -25,6 +25,27 @@
             "name": "E-Hentai",
             "language": "all",
             "homeUrl": "https://e-hentai.org"
+          }
+        ]
+      },
+      {
+        "name": "Hitomi",
+        "packageName": "eu.kanade.tachiyomi.extension.all.hitomi",
+        "resources": {
+          "apkUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/hitomi-v1.4.42/tachiyomi-all.hitomi-v1.4.42.apk",
+          "iconUrl": "https://raw.githubusercontent.com/pujx233/cursed-manga-extensions/repo/icon/all.hitomi.png",
+          "jarUrl": "https://github.com/pujx233/cursed-manga-extensions/releases/download/hitomi-v1.4.42/tachiyomi-all.hitomi-v1.4.42.jar"
+        },
+        "extensionLib": "1.4",
+        "versionCode": "104042",
+        "versionName": "1.4.42",
+        "contentWarning": "CONTENT_WARNING_NSFW",
+        "sources": [
+          {
+            "id": "690123758188633713",
+            "name": "Hitomi",
+            "language": "all",
+            "homeUrl": "https://hitomi.la"
           }
         ]
       }
